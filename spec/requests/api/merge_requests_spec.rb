@@ -41,6 +41,18 @@ describe Gitlab::API do
       response.status.should == 201
       json_response['title'].should == 'Test merge_request'
     end
+
+    it "should return 422 when source_branch does not exist" do
+      post api("/projects/#{project.id}/merge_requests", user),
+        title: "Test", source_branch: "should_not_be_available", target_branch: "master", author: user
+      response.status.should == 422
+    end
+
+    it "should return 422 when target_branch does not exist" do
+      post api("/projects/#{project.id}/merge_requests", user),
+        title: "Test", source_branch: "stable", target_branch: "should_not_be_available", author: user
+      response.status.should == 422
+    end
   end
 
   describe "PUT /projects/:id/merge_request/:merge_request_id" do
@@ -48,6 +60,16 @@ describe Gitlab::API do
       put api("/projects/#{project.id}/merge_request/#{merge_request.id}", user), title: "New title"
       response.status.should == 200
       json_response['title'].should == 'New title'
+    end
+
+    it "should return 422 when renaming target_branch to non existing branch" do
+      put api("/projects/#{project.id}/merge_request/#{merge_request.id}", user), target_branch: "unknown"
+      response.status.should == 422
+    end
+
+    it "should return 422 when renaming source_branch to non existing branch" do
+      put api("/projects/#{project.id}/merge_request/#{merge_request.id}", user), source_branch: "unknown"
+      response.status.should == 422
     end
   end
 
