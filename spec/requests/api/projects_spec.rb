@@ -8,6 +8,7 @@ describe Gitlab::API do
   let(:user3) { create(:user) }
   let!(:hook) { create(:project_hook, project: project, url: "http://example.com") }
   let!(:project) { create(:project, namespace: user.namespace ) }
+  let!(:namespace) { create(:namespace) }
   let!(:snippet) { create(:snippet, author: user, project: project, title: 'example') }
   let!(:users_project) { create(:users_project, user: user, project: project, project_access: UsersProject::MASTER) }
   let!(:users_project2) { create(:users_project, user: user3, project: project, project_access: UsersProject::DEVELOPER) }
@@ -47,6 +48,27 @@ describe Gitlab::API do
       end
     end
 
+    context "as admin" do
+      before do
+        @admin = create(:admin)
+      end
+
+      it "should succeed if global namespace used" do
+        post api("/projects", @admin), name: 'foo', namespace_id: Namespace.global_id
+        response.status.should == 201
+      end
+
+      it "should succeed with custom namespace" do
+        post api("/projects", @admin), name: 'foo', namespace_id: namespace.id
+        response.status.should == 201
+      end
+
+      it "should return a 404 error if namespace id not valid" do
+        post api("/projects", @admin), name: 'foo', namespace_id: '999'
+        response.status.should == 404
+      end
+    end
+
     it "should create new project without path" do
       expect { post api("/projects", user), name: 'foo' }.to change {Project.count}.by(1)
     end
@@ -71,6 +93,17 @@ describe Gitlab::API do
       response.status.should == 404
     end
 
+    it "should have user as namespace if namespace id not given" do
+      post api("/projects", user), name: 'foo'
+      json_response['namespace']['name'].should == user.username
+      json_response['namespace']['owner_id'].should == user.id
+    end
+
+    it "should set namespace" do
+      post api("/projects", user), name: 'foo', namespace_id: namespace.id
+      json_response['namespace']['name'].should == namespace.name
+    end
+
     it "should assign attributes to project" do
       project = attributes_for(:project, {
         description: Faker::Lorem.sentence,
@@ -78,7 +111,8 @@ describe Gitlab::API do
         issues_enabled: false,
         wall_enabled: false,
         merge_requests_enabled: false,
-        wiki_enabled: false
+        wiki_enabled: false,
+        namespace_id: user.username
       })
 
       post api("/projects", user), project

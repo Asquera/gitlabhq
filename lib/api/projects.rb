@@ -33,16 +33,18 @@ module Gitlab
       #   wall_enabled (optional) - enabled by default
       #   merge_requests_enabled (optional) - enabled by default
       #   wiki_enabled (optional) - enabled by default
+      #   namespace_id (optional) - defaults to user name
       # Example Request
       #   POST /projects
       post do
         attrs = attributes_for_keys [:name,
-                                    :description,
-                                    :default_branch,
-                                    :issues_enabled,
-                                    :wall_enabled,
-                                    :merge_requests_enabled,
-                                    :wiki_enabled]
+                                     :description,
+                                     :default_branch,
+                                     :issues_enabled,
+                                     :wall_enabled,
+                                     :merge_requests_enabled,
+                                     :wiki_enable,
+                                     :namespace_id]
         @project = ::Projects::CreateContext.new(current_user, attrs).execute
         if @project.saved?
           present @project, with: Entities::Project
