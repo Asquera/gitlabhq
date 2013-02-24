@@ -8,7 +8,6 @@ module Gitlab
       # Example Request:
       #   GET /namespaces
       get do
-        error!("Current user not found", 404) unless current_user
         @namespaces = current_user.namespaces
         present @namespaces, with: Entities::Namespace
       end
