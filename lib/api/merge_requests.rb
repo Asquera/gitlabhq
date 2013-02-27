@@ -68,6 +68,7 @@ module Gitlab
       #
       post ":id/merge_requests" do
         authorize! :write_merge_request, user_project
+        required_attributes! [:source_branch, :target_branch, :title]
 
         attrs = attributes_for_keys [:source_branch, :target_branch, :assignee_id, :title]
         merge_request = user_project.merge_requests.new(attrs)
@@ -121,6 +122,8 @@ module Gitlab
       #   POST /projects/:id/merge_request/:merge_request_id/comments
       #
       post ":id/merge_request/:merge_request_id/comments" do
+        required_attributes! [:note]
+
         merge_request = user_project.merge_requests.find(params[:merge_request_id])
         note = merge_request.notes.new(note: params[:note], project_id: user_project.id)
         note.author = current_user
@@ -128,9 +131,6 @@ module Gitlab
         if note.save
           present note, with: Entities::MRNote
         else
-          if note.errors[:note].any?
-            bad_request!(:note)
-          end
           not_found!
         end
       end
