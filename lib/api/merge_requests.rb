@@ -5,6 +5,23 @@ module Gitlab
 
     resource :projects do
 
+      helpers do
+        # If an error occurred this helper method provides an appropriate status code
+        #
+        # Parameters:
+        #   merge_request_errors (required) - The errors collection of MR
+        #
+        def handle_merge_request_error(merge_request_errors)
+          if merge_request_errors[:target_branch].any?
+            bad_request!(:target_branch)
+          elsif merge_request_errors[:source_branch].any?
+            bad_request!(:source_branch)
+          elsif merge_request_errors[:base].any?
+            error!(merge_request_errors[:base], 422)
+          end
+        end
+      end
+
       # List merge requests
       #
       # Parameters:
@@ -60,6 +77,7 @@ module Gitlab
           merge_request.reload_code
           present merge_request, with: Entities::MergeRequest
         else
+          handle_merge_request_error(merge_request.errors)
           not_found!
         end
       end
@@ -88,6 +106,7 @@ module Gitlab
           merge_request.mark_as_unchecked
           present merge_request, with: Entities::MergeRequest
         else
+          handle_merge_request_error(merge_request.errors)
           not_found!
         end
       end
@@ -109,6 +128,9 @@ module Gitlab
         if note.save
           present note, with: Entities::MRNote
         else
+          if note.errors[:note].any?
+            bad_request!(:note)
+          end
           not_found!
         end
       end
