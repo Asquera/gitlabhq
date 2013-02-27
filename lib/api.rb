@@ -25,6 +25,7 @@ module Gitlab
     error_format :json
     helpers APIHelpers
     
+    mount Namespaces
     mount Groups
     mount Users
     mount Projects

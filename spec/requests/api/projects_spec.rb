@@ -8,6 +8,7 @@ describe Gitlab::API do
   let(:user3) { create(:user) }
   let!(:project) { create(:project, namespace: user.namespace ) }
   let!(:hook) { create(:project_hook, project: project, url: "http://example.com") }
+  let!(:namespace) { create(:namespace, owner: user) }
   let!(:snippet) { create(:snippet, author: user, project: project, title: 'example') }
   let!(:users_project) { create(:users_project, user: user, project: project, project_access: UsersProject::MASTER) }
   let!(:users_project2) { create(:users_project, user: user3, project: project, project_access: UsersProject::DEVELOPER) }
@@ -44,6 +45,49 @@ describe Gitlab::API do
         expect {
           post api("/projects", user2), name: 'foo'
         }.to change {Project.count}.by(0)
+      end
+    end
+
+    context "as admin" do
+      before do
+        @admin = create(:admin)
+        @group = create(:group, owner: @admin)
+      end
+
+      it "should succeed if global namespace used" do
+        post api("/projects", @admin), name: 'foo', namespace_id: Namespace.global_id
+        response.status.should == 201
+      end
+
+      it "should succeed with custom namespace" do
+        post api("/projects", @admin), name: 'foo', namespace_id: namespace.id
+        response.status.should == 201
+      end
+
+      it "should succeed with group" do
+        post api("/projects", @admin), name: 'test', namespace_id: @group.id
+      end
+
+      it "should return a 404 error if namespace id not valid" do
+        post api("/projects", @admin), name: 'foo', namespace_id: '999'
+        response.status.should == 404
+      end
+    end
+
+    context "as a user in group" do
+      before do
+        @group = create(:group, owner: user)
+      end
+
+      it "should succeed with group as namespace" do
+        post api("/projects", user), name: 'foo', namespace_id: @group.id
+        response.status.should == 201
+      end
+
+      it "should have group as a namespace" do
+        post api("/projects", user), name: 'test', namespace_id: @group.id
+        json_response['namespace']['name'].should == @group.name
+        json_response['namespace']['owner_id'].should == user.id
       end
     end
 
@@ -84,6 +128,17 @@ describe Gitlab::API do
       response.status.should == 403
     end
 
+    it "should have user as namespace if namespace id not given" do
+      post api("/projects", user), name: 'foo'
+      json_response['namespace']['name'].should == user.username
+      json_response['namespace']['owner_id'].should == user.id
+    end
+
+    it "should set namespace id" do
+      post api("/projects", user), name: 'foo', namespace_id: namespace.id
+      json_response['namespace']['name'].should == namespace.name
+    end
+
     it "should assign attributes to project" do
       project = attributes_for(:project, {
         description: Faker::Lorem.sentence,
@@ -91,13 +146,14 @@ describe Gitlab::API do
         issues_enabled: false,
         wall_enabled: false,
         merge_requests_enabled: false,
-        wiki_enabled: false
+        wiki_enabled: false,
+        namespace_id: user.namespace_id
       })
 
       post api("/projects", user), project
 
       project.each_pair do |k,v|
-        next if k == :path
+        next if [:path, :namespace_id].include?(k)
         json_response[k.to_s].should == v
       end
     end

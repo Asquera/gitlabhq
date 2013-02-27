@@ -32,8 +32,12 @@ module Gitlab
       end
     end
 
-    class Group < Grape::Entity
-      expose :id, :name, :path, :owner_id
+    class Namespace < Grape::Entity
+      expose :id, :name, :path
+    end
+
+    class Group < Namespace
+      expose :owner_id
     end
 
     class GroupDetail < Group
