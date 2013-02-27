@@ -22,7 +22,7 @@ gem 'omniauth-twitter'
 gem 'omniauth-github'
 
 # GITLAB patched libs
-gem "grit",          git: "https://github.com/gitlabhq/grit.git",           ref: '7f35cb98ff17d534a07e3ce6ec3d580f67402837'
+gem "grit",          git: "https://github.com/gitlabhq/grit.git",           ref: '9e98418ce2d654485b967003726aa2706a10060b'
 gem 'grack',         git: "https://github.com/gitlabhq/grack.git",          ref: 'ba46f3b0845c6a09d488ae6abdce6ede37e227e8'
 gem 'grit_ext',      git: "https://github.com/gitlabhq/grit_ext.git",       ref: '8e6afc2da821354774aa4d1ee8a1aa2082f84a3e'
 
@@ -39,7 +39,8 @@ gem "pygments.rb",  git: "https://github.com/gitlabhq/pygments.rb.git", branch: 
 gem "github-linguist", "~> 2.3.4" , require: "linguist"
 
 # API
-gem "grape", "~> 0.2.1"
+gem "grape", "~> 0.3.1"
+gem "grape-entity", "~> 0.2.0"
 
 # Format dates and times
 # based on human-friendly examples
