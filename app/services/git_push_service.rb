@@ -19,16 +19,17 @@ class GitPushService
     # Collect data for this git push
     @push_data = post_receive_data(oldrev, newrev, ref)
 
+    create_push_event
+
     project.ensure_satellite_exists
     project.discover_default_branch
+    project.repository.expire_cache
 
     if push_to_branch?(ref, oldrev)
       project.update_merge_requests(oldrev, newrev, ref, @user)
       project.execute_hooks(@push_data.dup)
       project.execute_services(@push_data.dup)
     end
-
-    create_push_event
   end
 
   # This method provide a sample data
